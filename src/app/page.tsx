@@ -1,19 +1,228 @@
 "use client";
 
-import { useState } from "react";
-import { Dna, Apple, Camera, TrendingUp, CheckCircle2, Star, ArrowRight, Users, Shield, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Upload, Camera, FileText, ShoppingCart, TrendingUp, Dna, Calendar, Apple, Pill, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
-export default function LandingPage() {
-  const [email, setEmail] = useState("");
+interface UserProfile {
+  dnaUploaded: boolean;
+  routineData: {
+    age: string;
+    weight: string;
+    height: string;
+    activityLevel: string;
+    goals: string;
+    restrictions: string;
+  };
+  foodPhotos: string[];
+  dietPlan: DietPlan | null;
+  weeklyProgress: WeeklyProgress[];
+}
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    alert(`Obrigado! Entraremos em contato em breve no email: ${email}`);
-    setEmail("");
+interface DietPlan {
+  calories: number;
+  macros: {
+    protein: number;
+    carbs: number;
+    fats: number;
+  };
+  meals: Meal[];
+  supplements: Supplement[];
+  shoppingList: string[];
+}
+
+interface Meal {
+  name: string;
+  time: string;
+  foods: string[];
+  calories: number;
+}
+
+interface Supplement {
+  name: string;
+  dosage: string;
+  timing: string;
+}
+
+interface WeeklyProgress {
+  week: number;
+  weight: string;
+  energy: number;
+  compliance: number;
+  notes: string;
+}
+
+export default function DietApp() {
+  const [activeTab, setActiveTab] = useState("profile");
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    dnaUploaded: false,
+    routineData: {
+      age: "",
+      weight: "",
+      height: "",
+      activityLevel: "",
+      goals: "",
+      restrictions: "",
+    },
+    foodPhotos: [],
+    dietPlan: null,
+    weeklyProgress: [],
+  });
+
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(0);
+
+  // Load data from localStorage
+  useEffect(() => {
+    const savedProfile = localStorage.getItem("dietAppProfile");
+    if (savedProfile) {
+      setUserProfile(JSON.parse(savedProfile));
+    }
+  }, []);
+
+  // Save data to localStorage
+  useEffect(() => {
+    localStorage.setItem("dietAppProfile", JSON.stringify(userProfile));
+  }, [userProfile]);
+
+  const handleDNAUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setUserProfile({ ...userProfile, dnaUploaded: true });
+      toast.success("Teste de DNA carregado com sucesso!");
+    }
+  };
+
+  const handleFoodPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setUserProfile({
+          ...userProfile,
+          foodPhotos: [...userProfile.foodPhotos, reader.result as string],
+        });
+        toast.success("Foto da comida adicionada!");
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRoutineDataChange = (field: string, value: string) => {
+    setUserProfile({
+      ...userProfile,
+      routineData: { ...userProfile.routineData, [field]: value },
+    });
+  };
+
+  const generateDietPlan = async () => {
+    setIsGenerating(true);
+    setGenerationProgress(0);
+
+    // Simulate AI processing
+    const interval = setInterval(() => {
+      setGenerationProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 300);
+
+    setTimeout(() => {
+      const mockDietPlan: DietPlan = {
+        calories: 2200,
+        macros: {
+          protein: 165,
+          carbs: 220,
+          fats: 73,
+        },
+        meals: [
+          {
+            name: "Café da Manhã",
+            time: "07:00",
+            foods: ["3 ovos mexidos", "2 fatias de pão integral", "1 banana", "Café com leite"],
+            calories: 520,
+          },
+          {
+            name: "Lanche da Manhã",
+            time: "10:00",
+            foods: ["1 iogurte grego", "30g de granola", "10 amêndoas"],
+            calories: 280,
+          },
+          {
+            name: "Almoço",
+            time: "12:30",
+            foods: ["150g de frango grelhado", "1 xícara de arroz integral", "Salada verde", "Brócolis no vapor"],
+            calories: 650,
+          },
+          {
+            name: "Lanche da Tarde",
+            time: "16:00",
+            foods: ["1 batata doce média", "2 colheres de pasta de amendoim"],
+            calories: 320,
+          },
+          {
+            name: "Jantar",
+            time: "19:30",
+            foods: ["150g de salmão", "Quinoa", "Aspargos grelhados", "Salada mista"],
+            calories: 430,
+          },
+        ],
+        supplements: [
+          { name: "Vitamina D3", dosage: "2000 UI", timing: "Café da manhã" },
+          { name: "Ômega 3", dosage: "1000mg", timing: "Almoço" },
+          { name: "Magnésio", dosage: "400mg", timing: "Jantar" },
+          { name: "Probióticos", dosage: "10 bilhões CFU", timing: "Café da manhã" },
+        ],
+        shoppingList: [
+          "Ovos (2 dúzias)",
+          "Pão integral",
+          "Bananas",
+          "Iogurte grego",
+          "Granola",
+          "Amêndoas",
+          "Frango (1kg)",
+          "Arroz integral",
+          "Brócolis",
+          "Batata doce",
+          "Pasta de amendoim",
+          "Salmão (500g)",
+          "Quinoa",
+          "Aspargos",
+          "Mix de folhas verdes",
+        ],
+      };
+
+      setUserProfile({ ...userProfile, dietPlan: mockDietPlan });
+      setIsGenerating(false);
+      setActiveTab("diet");
+      toast.success("Plano de dieta gerado com sucesso!");
+    }, 3000);
+  };
+
+  const addWeeklyProgress = () => {
+    const newProgress: WeeklyProgress = {
+      week: userProfile.weeklyProgress.length + 1,
+      weight: "",
+      energy: 5,
+      compliance: 80,
+      notes: "",
+    };
+    setUserProfile({
+      ...userProfile,
+      weeklyProgress: [...userProfile.weeklyProgress, newProgress],
+    });
+    toast.success("Novo registro semanal adicionado!");
   };
 
   return (
@@ -33,493 +242,505 @@ export default function LandingPage() {
                 <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">Dieta Personalizada por IA</p>
               </div>
             </div>
-            <Button className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg">
-              Começar Agora
-            </Button>
+            <Badge variant="outline" className="bg-emerald-100 text-emerald-700 border-emerald-300">
+              <Dna className="w-3 h-3 mr-1" />
+              DNA Ativo
+            </Badge>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-12 sm:py-20">
-        <div className="text-center max-w-4xl mx-auto space-y-6 sm:space-y-8">
-          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-300 px-4 py-2 text-sm">
-            <Dna className="w-4 h-4 mr-2 inline" />
-            Tecnologia de Ponta em Nutrição Genética
-          </Badge>
-          
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 dark:text-white leading-tight">
-            Sua Dieta Perfeita,
-            <br />
-            <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-              Baseada no Seu DNA
-            </span>
-          </h2>
-          
-          <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            Descubra o poder da nutrição personalizada com análise genética avançada. 
-            Receba um plano de dieta e suplementação criado especialmente para você, 
-            com acompanhamento inteligente por IA.
-          </p>
+      {/* Main Content */}
+      <main className="container mx-auto px-4 py-6 sm:py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 bg-white/50 dark:bg-gray-800/50 p-2 rounded-xl">
+            <TabsTrigger value="profile" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-600 data-[state=active]:text-white">
+              <FileText className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Perfil</span>
+            </TabsTrigger>
+            <TabsTrigger value="photos" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-600 data-[state=active]:text-white">
+              <Camera className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Fotos</span>
+            </TabsTrigger>
+            <TabsTrigger value="diet" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-600 data-[state=active]:text-white">
+              <Apple className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Dieta</span>
+            </TabsTrigger>
+            <TabsTrigger value="progress" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-600 data-[state=active]:text-white">
+              <TrendingUp className="w-4 h-4 mr-2" />
+              <span className="hidden sm:inline">Progresso</span>
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-2xl text-lg px-8 py-6 w-full sm:w-auto"
-            >
-              Começar Minha Jornada
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="border-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50 text-lg px-8 py-6 w-full sm:w-auto"
-            >
-              Ver Como Funciona
-            </Button>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-8 pt-8 text-sm text-gray-600 dark:text-gray-400">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Análise de DNA Completa</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Plano 100% Personalizado</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              <span>Acompanhamento por IA</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm py-12 border-y border-emerald-200 dark:border-gray-700">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <p className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                10k+
-              </p>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">Clientes Satisfeitos</p>
-            </div>
-            <div className="text-center">
-              <p className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                95%
-              </p>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">Taxa de Sucesso</p>
-            </div>
-            <div className="text-center">
-              <p className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                50+
-              </p>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">Marcadores Genéticos</p>
-            </div>
-            <div className="text-center">
-              <p className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                24/7
-              </p>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-2">Suporte por IA</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="container mx-auto px-4 py-16 sm:py-24">
-        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-          <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Como Funciona o NutriDNA
-          </h3>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Um processo simples e científico para transformar sua alimentação
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="border-2 border-emerald-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-shadow">
-            <CardHeader>
-              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 rounded-xl w-fit mb-4">
-                <Dna className="w-8 h-8 text-white" />
-              </div>
-              <CardTitle className="text-xl">1. Envie Seu DNA</CardTitle>
-              <CardDescription>
-                Faça upload do seu teste de DNA ou solicite nosso kit de coleta
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="border-2 border-teal-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-shadow">
-            <CardHeader>
-              <div className="bg-gradient-to-br from-teal-500 to-cyan-600 p-4 rounded-xl w-fit mb-4">
-                <Camera className="w-8 h-8 text-white" />
-              </div>
-              <CardTitle className="text-xl">2. Análise Completa</CardTitle>
-              <CardDescription>
-                Nossa IA analisa seu DNA, rotina e fotos das suas refeições
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="border-2 border-cyan-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-shadow">
-            <CardHeader>
-              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 p-4 rounded-xl w-fit mb-4">
-                <Apple className="w-8 h-8 text-white" />
-              </div>
-              <CardTitle className="text-xl">3. Plano Personalizado</CardTitle>
-              <CardDescription>
-                Receba dieta, suplementação e lista de compras sob medida
-              </CardDescription>
-            </CardHeader>
-          </Card>
-
-          <Card className="border-2 border-blue-200 dark:border-gray-700 shadow-xl hover:shadow-2xl transition-shadow">
-            <CardHeader>
-              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 p-4 rounded-xl w-fit mb-4">
-                <TrendingUp className="w-8 h-8 text-white" />
-              </div>
-              <CardTitle className="text-xl">4. Acompanhamento</CardTitle>
-              <CardDescription>
-                Monitore seu progresso com feedback semanal inteligente
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </section>
-
-      {/* Benefits Section */}
-      <section className="bg-gradient-to-br from-emerald-500 to-teal-600 py-16 sm:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-            <h3 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-              Por Que Escolher o NutriDNA?
-            </h3>
-            <p className="text-lg text-emerald-50">
-              Tecnologia de ponta para resultados reais e duradouros
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white">
-              <CardHeader>
-                <Zap className="w-12 h-12 mb-4 text-yellow-300" />
-                <CardTitle className="text-2xl">Resultados Rápidos</CardTitle>
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-6">
+            <Card className="border-2 border-emerald-200 dark:border-gray-700 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-2">
+                  <Dna className="w-6 h-6" />
+                  Upload de Teste de DNA
+                </CardTitle>
+                <CardDescription className="text-emerald-50">
+                  Carregue seu teste de DNA para análise genética personalizada
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-emerald-50">
-                  Veja mudanças significativas em apenas 2-4 semanas com nosso plano baseado em ciência genética
-                </p>
+              <CardContent className="pt-6">
+                <div className="flex flex-col items-center gap-4">
+                  <div className="w-full max-w-md">
+                    <Label htmlFor="dna-upload" className="cursor-pointer">
+                      <div className="border-2 border-dashed border-emerald-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-gray-800 transition-all">
+                        <Upload className="w-12 h-12 mx-auto mb-4 text-emerald-600" />
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Clique para fazer upload do arquivo DNA
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">Formatos aceitos: .txt, .csv, .json</p>
+                      </div>
+                    </Label>
+                    <Input
+                      id="dna-upload"
+                      type="file"
+                      className="hidden"
+                      accept=".txt,.csv,.json"
+                      onChange={handleDNAUpload}
+                    />
+                  </div>
+                  {userProfile.dnaUploaded && (
+                    <Badge className="bg-emerald-500 text-white">
+                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                      DNA Carregado
+                    </Badge>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white">
-              <CardHeader>
-                <Shield className="w-12 h-12 mb-4 text-blue-300" />
-                <CardTitle className="text-2xl">100% Seguro</CardTitle>
+            <Card className="border-2 border-teal-200 dark:border-gray-700 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-teal-500 to-cyan-600 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-6 h-6" />
+                  Dados da Rotina
+                </CardTitle>
+                <CardDescription className="text-teal-50">
+                  Preencha suas informações para personalização completa
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-emerald-50">
-                  Seus dados genéticos são criptografados e protegidos com os mais altos padrões de segurança
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white">
-              <CardHeader>
-                <Users className="w-12 h-12 mb-4 text-pink-300" />
-                <CardTitle className="text-2xl">Suporte Dedicado</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-emerald-50">
-                  Equipe de nutricionistas e IA disponível 24/7 para tirar suas dúvidas e ajustar seu plano
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="container mx-auto px-4 py-16 sm:py-24">
-        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-          <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            O Que Nossos Clientes Dizem
-          </h3>
-          <p className="text-lg text-gray-600 dark:text-gray-300">
-            Histórias reais de transformação
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          <Card className="border-2 border-emerald-200 dark:border-gray-700 shadow-xl">
-            <CardHeader>
-              <div className="flex items-center gap-1 mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <CardTitle className="text-lg">Perdi 12kg em 3 meses!</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                "Nunca imaginei que meu DNA pudesse revelar tanto sobre minha alimentação. O plano é fácil de seguir e os resultados são incríveis!"
-              </p>
-              <p className="text-sm font-semibold text-emerald-600">— Maria Silva, 34 anos</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-teal-200 dark:border-gray-700 shadow-xl">
-            <CardHeader>
-              <div className="flex items-center gap-1 mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <CardTitle className="text-lg">Mais energia do que nunca</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                "A suplementação personalizada fez toda a diferença. Acordo com mais disposição e meu rendimento na academia triplicou!"
-              </p>
-              <p className="text-sm font-semibold text-teal-600">— João Santos, 28 anos</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-cyan-200 dark:border-gray-700 shadow-xl">
-            <CardHeader>
-              <div className="flex items-center gap-1 mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                ))}
-              </div>
-              <CardTitle className="text-lg">Finalmente entendi meu corpo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 dark:text-gray-300 mb-4">
-                "Descobri intolerâncias que nem sabia que tinha. Agora sei exatamente o que comer para me sentir bem todos os dias."
-              </p>
-              <p className="text-sm font-semibold text-cyan-600">— Ana Costa, 41 anos</p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm py-16 sm:py-24 border-y border-emerald-200 dark:border-gray-700">
-        <div className="container mx-auto px-4">
-          <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-            <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Planos e Preços
-            </h3>
-            <p className="text-lg text-gray-600 dark:text-gray-300">
-              Escolha o plano ideal para sua jornada de transformação
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            <Card className="border-2 border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-2xl transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-2xl">Básico</CardTitle>
-                <CardDescription>Para começar sua jornada</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold text-gray-900 dark:text-white">R$ 297</span>
-                  <span className="text-gray-600 dark:text-gray-400">/mês</span>
+              <CardContent className="pt-6 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="age">Idade</Label>
+                    <Input
+                      id="age"
+                      type="number"
+                      placeholder="Ex: 30"
+                      value={userProfile.routineData.age}
+                      onChange={(e) => handleRoutineDataChange("age", e.target.value)}
+                      className="border-teal-200 focus:border-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="weight">Peso (kg)</Label>
+                    <Input
+                      id="weight"
+                      type="number"
+                      placeholder="Ex: 75"
+                      value={userProfile.routineData.weight}
+                      onChange={(e) => handleRoutineDataChange("weight", e.target.value)}
+                      className="border-teal-200 focus:border-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="height">Altura (cm)</Label>
+                    <Input
+                      id="height"
+                      type="number"
+                      placeholder="Ex: 175"
+                      value={userProfile.routineData.height}
+                      onChange={(e) => handleRoutineDataChange("height", e.target.value)}
+                      className="border-teal-200 focus:border-teal-500"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="activity">Nível de Atividade</Label>
+                    <Input
+                      id="activity"
+                      placeholder="Ex: Moderado"
+                      value={userProfile.routineData.activityLevel}
+                      onChange={(e) => handleRoutineDataChange("activityLevel", e.target.value)}
+                      className="border-teal-200 focus:border-teal-500"
+                    />
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Análise de DNA completa</span>
+                <div>
+                  <Label htmlFor="goals">Objetivos</Label>
+                  <Textarea
+                    id="goals"
+                    placeholder="Ex: Perder peso, ganhar massa muscular, melhorar energia..."
+                    value={userProfile.routineData.goals}
+                    onChange={(e) => handleRoutineDataChange("goals", e.target.value)}
+                    className="border-teal-200 focus:border-teal-500"
+                    rows={3}
+                  />
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Plano de dieta personalizado</span>
+                <div>
+                  <Label htmlFor="restrictions">Restrições Alimentares</Label>
+                  <Textarea
+                    id="restrictions"
+                    placeholder="Ex: Intolerância à lactose, vegetariano, alergia a nozes..."
+                    value={userProfile.routineData.restrictions}
+                    onChange={(e) => handleRoutineDataChange("restrictions", e.target.value)}
+                    className="border-teal-200 focus:border-teal-500"
+                    rows={3}
+                  />
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Lista de compras automática</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Suporte por email</span>
-                </div>
-                <Button className="w-full mt-6 border-2 border-emerald-500 text-emerald-700 hover:bg-emerald-50" variant="outline">
-                  Começar Agora
+                <Button
+                  onClick={generateDietPlan}
+                  disabled={isGenerating || !userProfile.dnaUploaded}
+                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white shadow-lg"
+                >
+                  {isGenerating ? "Gerando Plano..." : "Gerar Plano de Dieta Personalizado"}
                 </Button>
+                {isGenerating && (
+                  <div className="space-y-2">
+                    <Progress value={generationProgress} className="h-2" />
+                    <p className="text-sm text-center text-gray-600">Analisando DNA e dados... {generationProgress}%</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
+          </TabsContent>
 
-            <Card className="border-4 border-emerald-500 shadow-2xl hover:shadow-3xl transition-shadow relative">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-4 py-1">
-                  Mais Popular
-                </Badge>
-              </div>
-              <CardHeader>
-                <CardTitle className="text-2xl">Premium</CardTitle>
-                <CardDescription>Resultados acelerados</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">R$ 497</span>
-                  <span className="text-gray-600 dark:text-gray-400">/mês</span>
-                </div>
+          {/* Photos Tab */}
+          <TabsContent value="photos" className="space-y-6">
+            <Card className="border-2 border-cyan-200 dark:border-gray-700 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-2">
+                  <Camera className="w-6 h-6" />
+                  Análise de Fotos de Comida
+                </CardTitle>
+                <CardDescription className="text-cyan-50">
+                  Envie fotos das suas refeições para análise nutricional por IA
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-semibold">Tudo do plano Básico +</span>
+              <CardContent className="pt-6 space-y-6">
+                <div className="flex flex-col items-center gap-4">
+                  <Label htmlFor="food-photo" className="cursor-pointer w-full">
+                    <div className="border-2 border-dashed border-cyan-300 dark:border-gray-600 rounded-xl p-8 text-center hover:border-cyan-500 hover:bg-cyan-50 dark:hover:bg-gray-800 transition-all">
+                      <Camera className="w-12 h-12 mx-auto mb-4 text-cyan-600" />
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Adicionar Foto da Refeição
+                      </p>
+                      <p className="text-xs text-gray-500 mt-2">JPG, PNG ou WEBP</p>
+                    </div>
+                  </Label>
+                  <Input
+                    id="food-photo"
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFoodPhotoUpload}
+                  />
                 </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Análise de fotos de comida por IA</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Suplementação personalizada</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Monitoramento semanal</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Suporte prioritário 24/7</span>
-                </div>
-                <Button className="w-full mt-6 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg">
-                  Começar Agora
-                </Button>
+
+                {userProfile.foodPhotos.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {userProfile.foodPhotos.map((photo, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={photo}
+                          alt={`Comida ${index + 1}`}
+                          className="w-full h-32 sm:h-40 object-cover rounded-lg shadow-md group-hover:shadow-xl transition-shadow"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                          <Badge className="bg-cyan-500 text-white">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Analisada
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {userProfile.foodPhotos.length > 0 && (
+                  <Card className="bg-cyan-50 dark:bg-gray-800 border-cyan-200">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Análise Nutricional</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Calorias estimadas:</span>
+                        <span className="font-semibold text-cyan-600">~650 kcal</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Proteínas:</span>
+                        <span className="font-semibold text-cyan-600">~35g</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Carboidratos:</span>
+                        <span className="font-semibold text-cyan-600">~60g</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Gorduras:</span>
+                        <span className="font-semibold text-cyan-600">~25g</span>
+                      </div>
+                      <div className="mt-4 p-3 bg-white dark:bg-gray-700 rounded-lg">
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
+                          <AlertCircle className="w-4 h-4 inline mr-1 text-cyan-600" />
+                          Sugestão: Adicione mais vegetais verdes para aumentar fibras e micronutrientes.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </CardContent>
             </Card>
+          </TabsContent>
 
-            <Card className="border-2 border-purple-200 dark:border-gray-700 shadow-lg hover:shadow-2xl transition-shadow">
-              <CardHeader>
-                <CardTitle className="text-2xl">Elite</CardTitle>
-                <CardDescription>Transformação completa</CardDescription>
-                <div className="mt-4">
-                  <span className="text-4xl font-bold text-gray-900 dark:text-white">R$ 797</span>
-                  <span className="text-gray-600 dark:text-gray-400">/mês</span>
+          {/* Diet Tab */}
+          <TabsContent value="diet" className="space-y-6">
+            {userProfile.dietPlan ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <Card className="border-2 border-emerald-200 dark:border-gray-700 shadow-lg">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Calorias Diárias</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold text-emerald-600">{userProfile.dietPlan.calories}</p>
+                      <p className="text-sm text-gray-500">kcal/dia</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-2 border-teal-200 dark:border-gray-700 shadow-lg">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Proteínas</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold text-teal-600">{userProfile.dietPlan.macros.protein}g</p>
+                      <p className="text-sm text-gray-500">por dia</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-2 border-cyan-200 dark:border-gray-700 shadow-lg">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-lg">Carboidratos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-3xl font-bold text-cyan-600">{userProfile.dietPlan.macros.carbs}g</p>
+                      <p className="text-sm text-gray-500">por dia</p>
+                    </CardContent>
+                  </Card>
                 </div>
+
+                <Card className="border-2 border-emerald-200 dark:border-gray-700 shadow-xl">
+                  <CardHeader className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
+                    <CardTitle className="flex items-center gap-2">
+                      <Apple className="w-6 h-6" />
+                      Plano de Refeições
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6 space-y-4">
+                    {userProfile.dietPlan.meals.map((meal, index) => (
+                      <Card key={index} className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-700 border-emerald-200">
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-lg">{meal.name}</CardTitle>
+                            <Badge variant="outline" className="bg-white dark:bg-gray-800">
+                              {meal.time}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                          <ul className="space-y-1">
+                            {meal.foods.map((food, foodIndex) => (
+                              <li key={foodIndex} className="text-sm flex items-start gap-2">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                                <span>{food}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <div className="pt-2 border-t border-emerald-200">
+                            <span className="text-sm font-semibold text-emerald-700">
+                              {meal.calories} kcal
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-2 border-purple-200 dark:border-gray-700 shadow-xl">
+                  <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-t-lg">
+                    <CardTitle className="flex items-center gap-2">
+                      <Pill className="w-6 h-6" />
+                      Suplementação Personalizada
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {userProfile.dietPlan.supplements.map((supplement, index) => (
+                        <Card key={index} className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-gray-800 dark:to-gray-700 border-purple-200">
+                          <CardContent className="pt-4">
+                            <h4 className="font-semibold text-purple-700 dark:text-purple-400">{supplement.name}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                              Dosagem: {supplement.dosage}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Horário: {supplement.timing}
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-2 border-orange-200 dark:border-gray-700 shadow-xl">
+                  <CardHeader className="bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-t-lg">
+                    <CardTitle className="flex items-center gap-2">
+                      <ShoppingCart className="w-6 h-6" />
+                      Lista de Compras Automática
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {userProfile.dietPlan.shoppingList.map((item, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-orange-50 dark:bg-gray-800 rounded-lg">
+                          <CheckCircle2 className="w-4 h-4 text-orange-600 flex-shrink-0" />
+                          <span className="text-sm">{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : (
+              <Card className="border-2 border-gray-200 dark:border-gray-700">
+                <CardContent className="pt-12 pb-12 text-center">
+                  <Apple className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Nenhum plano de dieta gerado
+                  </h3>
+                  <p className="text-gray-500 mb-6">
+                    Complete seu perfil e gere um plano personalizado
+                  </p>
+                  <Button
+                    onClick={() => setActiveTab("profile")}
+                    className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
+                  >
+                    Ir para Perfil
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Progress Tab */}
+          <TabsContent value="progress" className="space-y-6">
+            <Card className="border-2 border-blue-200 dark:border-gray-700 shadow-xl">
+              <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-6 h-6" />
+                  Monitoramento Semanal
+                </CardTitle>
+                <CardDescription className="text-blue-50">
+                  Acompanhe seu progresso e receba feedback personalizado
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm font-semibold">Tudo do plano Premium +</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Consultas mensais com nutricionista</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Ajustes ilimitados no plano</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Acesso a comunidade exclusiva</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm">Kit de suplementos incluído</span>
-                </div>
-                <Button className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg">
-                  Começar Agora
+              <CardContent className="pt-6 space-y-4">
+                <Button
+                  onClick={addWeeklyProgress}
+                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white"
+                >
+                  Adicionar Registro Semanal
                 </Button>
+
+                {userProfile.weeklyProgress.length > 0 ? (
+                  <div className="space-y-4">
+                    {userProfile.weeklyProgress.map((progress, index) => (
+                      <Card key={index} className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700 border-blue-200">
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-lg">Semana {progress.week}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div>
+                            <Label htmlFor={`weight-${index}`}>Peso (kg)</Label>
+                            <Input
+                              id={`weight-${index}`}
+                              type="number"
+                              placeholder="Ex: 74.5"
+                              value={progress.weight}
+                              onChange={(e) => {
+                                const updated = [...userProfile.weeklyProgress];
+                                updated[index].weight = e.target.value;
+                                setUserProfile({ ...userProfile, weeklyProgress: updated });
+                              }}
+                              className="border-blue-200"
+                            />
+                          </div>
+                          <div>
+                            <Label>Nível de Energia (1-10): {progress.energy}</Label>
+                            <Input
+                              type="range"
+                              min="1"
+                              max="10"
+                              value={progress.energy}
+                              onChange={(e) => {
+                                const updated = [...userProfile.weeklyProgress];
+                                updated[index].energy = parseInt(e.target.value);
+                                setUserProfile({ ...userProfile, weeklyProgress: updated });
+                              }}
+                              className="w-full"
+                            />
+                          </div>
+                          <div>
+                            <Label>Aderência ao Plano: {progress.compliance}%</Label>
+                            <Progress value={progress.compliance} className="h-2" />
+                          </div>
+                          <div>
+                            <Label htmlFor={`notes-${index}`}>Observações</Label>
+                            <Textarea
+                              id={`notes-${index}`}
+                              placeholder="Como você se sentiu esta semana?"
+                              value={progress.notes}
+                              onChange={(e) => {
+                                const updated = [...userProfile.weeklyProgress];
+                                updated[index].notes = e.target.value;
+                                setUserProfile({ ...userProfile, weeklyProgress: updated });
+                              }}
+                              className="border-blue-200"
+                              rows={2}
+                            />
+                          </div>
+                          <div className="p-3 bg-white dark:bg-gray-700 rounded-lg border border-blue-200">
+                            <p className="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-1">
+                              Feedback da IA:
+                            </p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              Excelente progresso! Continue mantendo a aderência ao plano. Considere aumentar a ingestão de água para otimizar resultados.
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <TrendingUp className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-500">Nenhum registro semanal ainda</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-16 sm:py-24">
-        <Card className="border-4 border-emerald-500 shadow-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-800 dark:to-gray-700">
-          <CardContent className="py-12 sm:py-16 text-center">
-            <h3 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Pronto Para Transformar Sua Alimentação?
-            </h3>
-            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-              Junte-se a milhares de pessoas que já descobriram o poder da nutrição personalizada por DNA
-            </p>
-            <form onSubmit={handleSubmit} className="max-w-md mx-auto flex flex-col sm:flex-row gap-4">
-              <Input
-                type="email"
-                placeholder="Seu melhor email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="border-2 border-emerald-300 focus:border-emerald-500 text-lg py-6"
-              />
-              <Button 
-                type="submit"
-                size="lg"
-                className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg px-8 py-6 whitespace-nowrap"
-              >
-                Começar Agora
-              </Button>
-            </form>
-            <p className="text-sm text-gray-500 mt-4">
-              Sem compromisso. Cancele quando quiser.
-            </p>
-          </CardContent>
-        </Card>
-      </section>
+          </TabsContent>
+        </Tabs>
+      </main>
 
       {/* Footer */}
-      <footer className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-emerald-200 dark:border-gray-700">
-        <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 p-2 rounded-lg">
-                  <Apple className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  NutriDNA
-                </span>
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Nutrição personalizada baseada em análise genética e inteligência artificial
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Produto</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li><a href="#" className="hover:text-emerald-600">Como Funciona</a></li>
-                <li><a href="#" className="hover:text-emerald-600">Planos e Preços</a></li>
-                <li><a href="#" className="hover:text-emerald-600">Depoimentos</a></li>
-                <li><a href="#" className="hover:text-emerald-600">FAQ</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Empresa</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li><a href="#" className="hover:text-emerald-600">Sobre Nós</a></li>
-                <li><a href="#" className="hover:text-emerald-600">Blog</a></li>
-                <li><a href="#" className="hover:text-emerald-600">Carreiras</a></li>
-                <li><a href="#" className="hover:text-emerald-600">Contato</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li><a href="#" className="hover:text-emerald-600">Privacidade</a></li>
-                <li><a href="#" className="hover:text-emerald-600">Termos de Uso</a></li>
-                <li><a href="#" className="hover:text-emerald-600">Cookies</a></li>
-                <li><a href="#" className="hover:text-emerald-600">Segurança</a></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-emerald-200 dark:border-gray-700 pt-8 text-center">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              © 2024 NutriDNA. Todos os direitos reservados.
-            </p>
-          </div>
+      <footer className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t border-emerald-200 dark:border-gray-700 mt-12">
+        <div className="container mx-auto px-4 py-6 text-center">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            NutriDNA - Dieta Personalizada por IA baseada em DNA
+          </p>
         </div>
       </footer>
     </div>
